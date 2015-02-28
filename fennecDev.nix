@@ -1,5 +1,47 @@
-with import <nixpkgs> {};
+let pkgs = import <nixpkgs> {}; in
+with pkgs;
 let myandroidndk = callPackage ./android/androidndk.nix { platformTools = androidenv.platformTools; };    
+    android_support_extra = stdenv.mkDerivation {
+      buildInputs = [ unzip ];
+      buildCommand = ''
+        mkdir -p $out
+        cd $out
+        unzip $src
+      '';
+      name = "android_support_extra";
+      src = fetchurl {
+        url = https://dl-ssl.google.com/android/repository/support_r20.zip;
+        sha1 = "719c260dc3eb950712988f987daaf91afa9e36af";
+      };
+      meta = {
+        description = "Android v4 support library";
+        url = http://developer.android.com/;
+      };
+    };
+    myandroidsdk = callPackage ./android/androidsdk.nix { 
+      inherit (pkgs) stdenv fetchurl unzip makeWrapper;
+      inherit (pkgs) freetype fontconfig glib gtk atk mesa file alsaLib jdk;
+      inherit (pkgs.xorg) libX11 libXext libXrender libxcb libXau libXdmcp libXtst;
+
+      inherit (androidenv) platformTools buildTools support supportRepository platforms sysimages addons;
+      inherit android_support_extra;
+
+      stdenv_32bit = pkgsi686Linux.stdenv;
+      zlib_32bit = pkgsi686Linux.zlib;
+      libX11_32bit = pkgsi686Linux.xorg.libX11;
+      libxcb_32bit = pkgsi686Linux.xorg.libxcb;
+      libXau_32bit = pkgsi686Linux.xorg.libXau;
+      libXdmcp_32bit = pkgsi686Linux.xorg.libXdmcp;
+      libXext_32bit = pkgsi686Linux.xorg.libXext;
+      mesa_32bit = pkgsi686Linux.mesa;
+      alsaLib_32bit = pkgsi686Linux.alsaLib;
+    };
+    myandroidsdk_5_0_1 = myandroidsdk {
+      platformVersions = [ "21" ];
+      abiVersions = [ "armeabi-v7a" "x86" ];
+      useGoogleAPIs = true;
+      useExtraSupportLibs = true;
+    };
  in
 (import <nixpkgs/pkgs/misc/my-env> {
         inherit substituteAll pkgs;
@@ -41,22 +83,22 @@ let myandroidndk = callPackage ./android/androidndk.nix { platformTools = androi
                           ncurses
                           jdk ant # androidndk
                           myandroidndk
-                          androidenv.androidsdk_5_0_1 # this will land in nixos 15.04
+                          myandroidsdk_5_0_1 
                         ];
        
           extraCmds = ''
-           export LIBPATHS=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
+           # export LIBPATHS=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
 
-           export C_INCLUDE_PATH=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
-           export CPLUS_INCLUDE_PATH=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
-           export LIBRARY_PATH=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:$LIBRARY_PATH:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
-           LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
+           # export C_INCLUDE_PATH=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
+           # export CPLUS_INCLUDE_PATH=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
+           # export LIBRARY_PATH=${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:$LIBRARY_PATH:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
+           # LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:${dbus_libs}/include/dbus-1.0/dbus:${dbus_libs}/lib/dbus-1.0/include/dbus:${stdenv_32bit.glibc}/lib:${alsaLib}/lib:${xlibs.libX11}/lib:${xlibs.libXext}/lib:${xlibs.libXft}/lib:${xlibs.libXt}/lib:${ats}/lib:${pango}/lib:${freetype}/lib:${cairo}/lib:${zlib}/lib:${xlibs.libxcb}/lib:${xlibs.libXau}/lib:${xlibs.libXdmcp}/lib:${mesa}/lib
 
 
-           # for i in $nativeBuildInputs; do
-           #   LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$i/lib
-           # done
-           export LD_LIBRARY_PATH
-           export AUTOCONF=autoconf
+           # # for i in $nativeBuildInputs; do
+           # #   LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$i/lib
+           # # done
+           # export LD_LIBRARY_PATH
+           # export AUTOCONF=autoconf
           '';
         }
