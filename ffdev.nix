@@ -1,3 +1,4 @@
+# The expression in this file is nicked from http://bluishcoder.co.nz/2014/05/15/firefox-development-on-nixos.html
 with import <nixpkgs> {};
 myEnvFun {
       name = "firefoxEnv";
