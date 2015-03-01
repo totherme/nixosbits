@@ -4,9 +4,9 @@
 , libX11_32bit, libxcb_32bit, libXau_32bit, libXdmcp_32bit, libXext_32bit, mesa_32bit, alsaLib_32bit
 , libX11, libXext, libXrender, libxcb, libXau, libXdmcp, libXtst, mesa, alsaLib
 , freetype, fontconfig, glib, gtk, atk, file, jdk
-, android_support_extra
+, android_support_extra, google_play_services
 }:
-{platformVersions, abiVersions, useGoogleAPIs, useExtraSupportLibs}:
+{platformVersions, abiVersions, useGoogleAPIs, useExtraSupportLibs, useGooglePlayServices}:
 
 stdenv.mkDerivation rec {
   name = "android-sdk-${version}";
@@ -137,6 +137,14 @@ stdenv.mkDerivation rec {
 
     ${if useExtraSupportLibs then
        "ln -s ${android_support_extra}/support ."
+     else ""}
+
+    cd ..
+    mkdir -p google
+    cd google
+
+    ${if useGooglePlayServices then
+       "ln -s ${google_play_services}/google-play-services google_play_services"
      else ""}
       
     cd ../..
